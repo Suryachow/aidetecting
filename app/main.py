@@ -89,31 +89,32 @@ async def get_model_info():
 def apply_heuristics(text, ai_score, human_score):
     reasons = []
     
-    # 1. Check for aggressive capitalization (Human shouting)
+    # 1. Capitalization Analysis (Intensity Check)
     alpha_chars = [c for c in text if c.isalpha()]
     if len(alpha_chars) > 0:
         caps_ratio = sum(1 for c in alpha_chars if c.isupper()) / len(alpha_chars)
-        # Raised threshold to 0.7 to avoid catching headers/titles
+        # Threshold set to 0.7 to accommodate valid headers/titles
         if caps_ratio > 0.7:
             ai_score = max(0, ai_score - 40)
             human_score = min(100, human_score + 40)
             reasons.append("Excessive capitalization detected")
 
-    # 2. Check for informal punctuation (e.g. !!, ??, ..)
+    # 2. Punctuation Pattern Analysis
+    # Strict filtering to avoid false positives on technical syntax (e.g., file paths)
     if "!!" in text or "??" in text or "?!" in text:
         ai_score = max(0, ai_score - 20)
         human_score = min(100, human_score + 20)
         reasons.append("Informal punctuation usage")
         
-    # 2b. Check for TECHNICAL/CODE patterns (AI loves Markdown/Code)
-    # If text contains code symbols or markdown headers, penalize Human score HEAVILY.
+    # 3. Technical Structure / Syntax Detection
+    # Identifies code blocks, markdown, and command-line syntax characteristic of LLM outputs.
     code_symbols = ["```", "GET /", "POST /", "def ", "import ", "sudo ", "pip install", "python -m", "curl ", "npm ", "http://", "https://", "{", "}", "<ul>", "<li>"]
     if any(s in text for s in code_symbols):
-        ai_score = min(100, max(80, ai_score + 50)) # Force at least 80% AI if code detected
+        ai_score = min(100, max(80, ai_score + 50)) # Enforce high confidence for structured technical text
         human_score = 100 - ai_score
-        reasons.append("Technical/Code patterns detected (AI Structure)")
+        reasons.append("Technical/Code patterns detected (Structure Match)")
 
-    # 3. Check for specific common typos/slang (strict word boundaries)
+    # 4. Informal Language / Typo Analysis
     import re
     common_typos = [
         r"\biam\b", r"\bdont\b", r"\bcant\b", r"\bwont\b", r"\bim\b", 
@@ -131,10 +132,9 @@ def apply_heuristics(text, ai_score, human_score):
         human_score = min(100, human_score + reduction)
         reasons.append(f"Detected informal grammar/typos (Confidence +{min(reduction, 100)}%)")
 
-    # 4. Burstiness / Sentence Variation Check
-    # RE-TUNED: Split by NEWLINES and PERIODS to capture lists/headers.
+    # 5. Burstiness / Sentence Variation Analysis
+    # Segments text by newlines and periods to accurately measure structural variance.
     import re
-    # Split by period or newline, but keep the content
     raw_sentences = re.split(r'[.\n]+', text)
     sentences = [s.strip() for s in raw_sentences if len(s.strip()) > 15 and not s.strip().startswith(('-', '*', '#', '>', '`', '1.', '2.'))]
     
@@ -144,21 +144,21 @@ def apply_heuristics(text, ai_score, human_score):
         variance = sum((l - avg_len) ** 2 for l in lengths) / len(lengths)
         std_dev = variance ** 0.5
         
-        # High variance (Burstiness) -> Human
-        # REQUIRED: std_dev > 25 (Extremely high). 
+        # High Variance -> Human
+        # Threshold: std_dev > 25 (Indicates highly erratic structure)
         if std_dev > 25:
-            # Only apply if NO code patterns were found
+            # Conditional Application: Only if no technical patterns exist
             if not any(s in text for s in code_symbols):
                 ai_score = max(0, ai_score - 15)
                 human_score = min(100, human_score + 15)
-                reasons.append("Extreme sentence variation (Human Burstiness)")
+                reasons.append("High structural variance (Human Pattern)")
         
-        # Low variance -> AI (Robotic Flow)
+        # Low Variance -> AI
         elif std_dev < 12: 
             ai_score = min(100, ai_score + 25)
             reasons.append("Uniform sentence structure (Robotic Flow)")
 
-    # 5. AI Transition Words
+    # 6. Transitional Phrase Analysis
     ai_transitions = ["however,", "moreover,", "furthermore,", "in conclusion,", "additionally,", "consequently,", "thus,"]
     lower_text = text.lower()
     transition_count = sum(1 for t in ai_transitions if t in lower_text)
@@ -166,9 +166,9 @@ def apply_heuristics(text, ai_score, human_score):
         ai_score = min(100, ai_score + (15 * transition_count))
         reasons.append(f"Detected AI-style transition words (+{15 * transition_count}%)")
 
-    # 6. Repetition Check
+    # 7. Repetition / Loop Detection
     import collections
-    phrases = [s.strip().lower() for s in raw_sentences if len(s.strip()) > 10] # Use raw_sentences to catch repeated list items
+    phrases = [s.strip().lower() for s in raw_sentences if len(s.strip()) > 10]
     if len(phrases) > 3:
         counts = collections.Counter(phrases)
         most_common = counts.most_common(1)
@@ -176,18 +176,18 @@ def apply_heuristics(text, ai_score, human_score):
              ai_score = min(100, ai_score + 40)
              reasons.append("High phrase repetition (Robotic Pattern)")
 
-    # 7. Vocabulary Richness (Lexical Diversity)
+    # 8. Lexical Diversity (Vocabulary Richness)
     words = text.lower().split()
     if len(words) > 50:
         unique_ratio = len(set(words)) / len(words)
-        # Increase requirement for "Rich" vocabulary to 0.9 (Very strict)
+        # Strict High Diversity -> Human
         if unique_ratio > 0.9:
              ai_score = max(0, ai_score - 10)
              human_score = min(100, human_score + 10)
              reasons.append("Rich vocabulary usage")
     
-    # NEW: Structure/Format Check
-    # If text has many newlines but few periods, it's likely a list/readme -> AI/Robotic
+    # 9. Format Structure Analysis
+    # High newline-to-period ratio indicates list/formatted content common in AI generation.
     newline_count = text.count('\n')
     period_count = text.count('.')
     if period_count > 0 and (newline_count / period_count) > 2:
