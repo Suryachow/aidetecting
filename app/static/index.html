@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Detector (Pro Enterprise Edition)</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outlet:wght@300;400;600&family=Inter:wght@300;400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Human Text Detector <span class="premium-badge">PRO</span></h1>
+            <p class="subtitle">Analyze text to determine if it was written by a human or AI.</p>
+        </header>
+
+        <main>
+            <div class="model-info-bar">
+                <span class="status-dot"></span>
+                <span id="model-name">Loading Model Type...</span>
+            </div>
+            <div class="input-section">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('text')">Text Input</button>
+                    <button class="tab-btn" onclick="switchTab('file')">File Upload</button>
+                </div>
+
+                <div id="text-tab" class="tab-content active">
+                    <textarea id="text-input" placeholder="Paste your text here to analyze..."></textarea>
+                    <button class="analyze-btn" onclick="analyzeText()">Analyze Text</button>
+                </div>
+
+                <div id="file-tab" class="tab-content">
+                    <div class="file-drop-zone" id="drop-zone">
+                        <p>Drag & Drop your file here</p>
+                        <p class="sub-text">or</p>
+                        <input type="file" id="file-input" accept=".txt,.md,.csv">
+                        <label for="file-input" class="file-label">Choose File</label>
+                    </div>
+                    <div id="file-name" class="file-name"></div>
+                    <button class="analyze-btn" onclick="analyzeFile()">Analyze File</button>
+                </div>
+            </div>
+
+            <div class="result-section" id="result-section">
+                <div class="result-card">
+                    <h2>Analysis Result</h2>
+                    <div class="score-container">
+                        <div class="score-circle">
+                            <svg viewBox="0 0 36 36" class="circular-chart">
+                                <path class="circle-bg" d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="circle" id="ai-score-ring" stroke-dasharray="0, 100" d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div class="percentage">
+                                <span id="ai-score">0</span>%
+                                <span class="label">AI Probability</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="verdict" id="verdict">Human Written</div>
+                    <div class="details">
+                        <div class="detail-item">
+                            <span class="label">Confidence:</span>
+                            <span class="value" id="confidence">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+
+</html>

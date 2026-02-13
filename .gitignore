@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+models/
+logs/
+.venv/
+.env
+.DS_Store
+inspect_data.py
+check_model.py
+test_accuracy.py

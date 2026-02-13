@@ -1,0 +1,11 @@
+torch
+transformers
+datasets
+scikit-learn
+pandas
+fastapi
+uvicorn
+python-multipart
+nltk
+matplotlib
+shap
