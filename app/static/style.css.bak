@@ -275,3 +275,16 @@ textarea:focus {
 .too-short .verdict {
     color: var(--secondary-color);
 }
+
+.premium-badge {
+    background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+    color: #000;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    margin-left: 10px;
+    display: inline-block;
+    vertical-align: middle;
+}
